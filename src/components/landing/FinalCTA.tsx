@@ -19,10 +19,11 @@ const FinalCTA = () => {
             The ability to read confidently.
           </p>
           <Button
+            asChild
             size="lg"
             className="mt-8 bg-gradient-hero text-primary-foreground font-display font-bold rounded-full px-10 text-base h-14 shadow-hero hover:opacity-90 transition-opacity"
           >
-            👉 Start Now
+            <a href="#early-access">👉 Start Now</a>
           </Button>
         </motion.div>
       </div>

@@ -14,21 +14,43 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
+            <div className="flex gap-2 mb-6">
+              <span className="inline-block text-xs font-display font-bold uppercase tracking-wider bg-primary/10 text-primary px-3 py-1 rounded-full">
+                Early Access
+              </span>
+              <span className="inline-block text-xs font-display font-bold uppercase tracking-wider bg-secondary/10 text-secondary px-3 py-1 rounded-full">
+                Built for Beginners
+              </span>
+            </div>
             <h1 className="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight text-foreground">
               Help Your Child Learn to Read With{" "}
               <span className="text-gradient-primary">Joy</span> — Not Pressure
             </h1>
             <p className="mt-6 text-lg md:text-xl text-muted-foreground font-body leading-relaxed max-w-lg">
-              BeautifulMinds is a proven step-by-step reading system that turns beginners into confident readers through stories, sounds, pictures, and play.
+              BeautifulMinds is a step-by-step reading platform that helps children grow into confident readers through stories, sounds, pictures, and play.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-hero text-primary-foreground shadow-hero font-display font-bold rounded-full px-8 text-base h-14 hover:opacity-90 transition-opacity">
-                👉 Get Early Access
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-hero text-primary-foreground shadow-hero font-display font-bold rounded-full px-8 text-base h-14 hover:opacity-90 transition-opacity"
+              >
+                <a href="#early-access">Get Early Access</a>
               </Button>
-              <Button variant="ghost" size="lg" className="font-display font-semibold text-primary rounded-full px-8 text-base h-14 hover:bg-primary/5">
-                For Schools & Educators <ArrowRight className="ml-2 h-4 w-4" />
+              <Button
+                asChild
+                variant="ghost"
+                size="lg"
+                className="font-display font-semibold text-primary rounded-full px-8 text-base h-14 hover:bg-primary/5"
+              >
+                <a href="#schools">
+                  For Schools & Educators <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
               </Button>
             </div>
+            <p className="mt-5 text-sm text-muted-foreground">
+              Starting with a simple early access rollout for families, schools, and literacy partners.
+            </p>
           </motion.div>
 
           <motion.div
