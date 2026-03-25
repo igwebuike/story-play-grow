@@ -1,12 +1,14 @@
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import ProblemSection from "@/components/landing/ProblemSection";
-import SolutionSection from "@/components/landing/SolutionSection";
+import BetterWaySection from "@/components/landing/BetterWaySection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
+import LibrarySection from "@/components/landing/LibrarySection";
+import AfricanStoriesSection from "@/components/landing/AfricanStoriesSection";
 import AudienceSection from "@/components/landing/AudienceSection";
-import TestimonialSection from "@/components/landing/TestimonialSection";
-import OfferSection from "@/components/landing/OfferSection";
+import PartnersSection from "@/components/landing/PartnersSection";
+import WaitlistSection from "@/components/landing/WaitlistSection";
+import FAQSection from "@/components/landing/FAQSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 
@@ -16,13 +18,15 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <ProblemSection />
-        <SolutionSection />
+        <BetterWaySection />
         <HowItWorksSection />
         <FeaturesSection />
+        <LibrarySection />
+        <AfricanStoriesSection />
         <AudienceSection />
-        <TestimonialSection />
-        <OfferSection />
+        <PartnersSection />
+        <WaitlistSection />
+        <FAQSection />
         <FinalCTA />
       </main>
       <Footer />

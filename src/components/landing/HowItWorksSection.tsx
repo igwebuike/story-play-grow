@@ -1,44 +1,36 @@
 import { motion } from "framer-motion";
-import { Lightbulb, Layers, TrendingUp, Gamepad2 } from "lucide-react";
+import { Search, RefreshCw, TrendingUp } from "lucide-react";
 
 const steps = [
   {
-    icon: Lightbulb,
+    icon: Search,
     step: "Step 1",
-    title: "Spark Curiosity",
-    description: "Stories that make kids want to read.",
+    title: "Discover",
+    description: "Children explore age-appropriate stories, sounds, and picture-based reading activities.",
     bg: "bg-accent/30",
     iconColor: "text-accent-foreground",
   },
   {
-    icon: Layers,
+    icon: RefreshCw,
     step: "Step 2",
-    title: "Build Foundations",
-    description: "Sounds, letters, blends, and sight words taught interactively.",
+    title: "Practice",
+    description: "They build confidence through repetition, word recognition, and playful reading support.",
     bg: "bg-primary/10",
     iconColor: "text-primary",
   },
   {
     icon: TrendingUp,
     step: "Step 3",
-    title: "Grow Confidence",
-    description: "Children practice reading real stories on their own.",
+    title: "Grow",
+    description: "Parents and educators help children continue progressing at a comfortable pace.",
     bg: "bg-secondary/10",
     iconColor: "text-secondary",
-  },
-  {
-    icon: Gamepad2,
-    step: "Step 4",
-    title: "Reinforce With Fun",
-    description: "Drawing, coloring, videos, and games keep them engaged.",
-    bg: "bg-accent/30",
-    iconColor: "text-accent-foreground",
   },
 ];
 
 const HowItWorksSection = () => {
   return (
-    <section id="how-it-works" className="py-20 md:py-28">
+    <section id="how-it-works" className="py-20 md:py-28 bg-card">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -52,7 +44,7 @@ const HowItWorksSection = () => {
           </h2>
         </motion.div>
 
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+        <div className="mt-14 grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {steps.map((s, i) => (
             <motion.div
               key={s.title}
