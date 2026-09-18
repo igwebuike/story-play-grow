@@ -3,7 +3,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
 type ViewMode = 'home' | 'library' | 'profile' | 'admin'
-type AuthMode = 'signup' | 'login' | 'forgot' | 'reset'
+type AuthMode = 'signup' | 'login'
 
 type Profile = {
   id: string
@@ -366,7 +366,6 @@ function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('signup')
   const [showAuth, setShowAuth] = useState(false)
   const [loadingAuth, setLoadingAuth] = useState(false)
-  const [resetPassword, setResetPassword] = useState('')
   const [message, setMessage] = useState('')
   const [authForm, setAuthForm] = useState<AuthFormState>(initialAuthForm)
   const [newsletter, setNewsletter] = useState<NewsletterState>(initialNewsletter)
@@ -398,12 +397,7 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setAuthMode('reset')
-        setShowAuth(true)
-        setMessage('Choose a new password for your BeautifulMinds account.')
-      }
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
       setSession(currentSession)
       setUser(currentSession?.user ?? null)
 
@@ -572,47 +566,6 @@ function App() {
     setMessage('You are now logged in.')
     setShowAuth(false)
     setActiveView('profile')
-  }
-
-  async function handleForgotPassword(event: React.FormEvent) {
-    event.preventDefault()
-    const email = authForm.email.trim()
-    if (!email) {
-      setMessage('Enter your email address first.')
-      return
-    }
-    setLoadingAuth(true)
-    setMessage('')
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://beautifulminds.com.ng',
-    })
-    setLoadingAuth(false)
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-    setMessage('Password reset email sent. Check your inbox and spam folder, then follow the link.')
-    setShowAuth(false)
-  }
-
-  async function handleUpdatePassword(event: React.FormEvent) {
-    event.preventDefault()
-    if (resetPassword.length < 8) {
-      setMessage('Please use at least 8 characters for your new password.')
-      return
-    }
-    setLoadingAuth(true)
-    setMessage('')
-    const { error } = await supabase.auth.updateUser({ password: resetPassword })
-    setLoadingAuth(false)
-    if (error) {
-      setMessage(error.message)
-      return
-    }
-    setResetPassword('')
-    setShowAuth(false)
-    setActiveView('profile')
-    setMessage('Password updated successfully. You are signed in.')
   }
 
   async function handleLogout() {
@@ -902,6 +855,7 @@ function App() {
           savingNewsletter={savingNewsletter}
           curatedBookSources={curatedBookSources}
           curatedLearningLinks={curatedLearningLinks}
+          onOpen={handleOpenResource}
         />
       ) : null}
 
@@ -962,10 +916,6 @@ function App() {
           onClose={() => setShowAuth(false)}
           onSignUp={handleSignUp}
           onLogin={handleLogin}
-          onForgotPassword={handleForgotPassword}
-          onUpdatePassword={handleUpdatePassword}
-          resetPassword={resetPassword}
-          setResetPassword={setResetPassword}
         />
       ) : null}
     </div>
@@ -1005,6 +955,7 @@ function HomeView({
   savingNewsletter,
   curatedBookSources,
   curatedLearningLinks,
+  onOpen,
 }: {
   onOpenSignup: () => void
   onOpenLibrary: () => void
@@ -1014,6 +965,7 @@ function HomeView({
   savingNewsletter: boolean
   curatedBookSources: Resource[]
   curatedLearningLinks: { title: string; url: string; description: string }[]
+  onOpen: (resource: Resource) => Promise<void>
 }) {
   return (
     <>
@@ -1438,8 +1390,14 @@ function AdminView({
 }
 
 function AuthModal({
-  mode, setMode, form, setForm, loading, onClose, onSignUp, onLogin,
-  onForgotPassword, onUpdatePassword, resetPassword, setResetPassword,
+  mode,
+  setMode,
+  form,
+  setForm,
+  loading,
+  onClose,
+  onSignUp,
+  onLogin,
 }: {
   mode: AuthMode
   setMode: React.Dispatch<React.SetStateAction<AuthMode>>
@@ -1449,58 +1407,136 @@ function AuthModal({
   onClose: () => void
   onSignUp: (event: React.FormEvent) => Promise<void>
   onLogin: (event: React.FormEvent) => Promise<void>
-  onForgotPassword: (event: React.FormEvent) => Promise<void>
-  onUpdatePassword: (event: React.FormEvent) => Promise<void>
-  resetPassword: string
-  setResetPassword: React.Dispatch<React.SetStateAction<string>>
 }) {
-  const title = mode === 'signup' ? 'Create your account' : mode === 'forgot' ? 'Reset your password' : mode === 'reset' ? 'Choose a new password' : 'Welcome back'
-  const subtitle = mode === 'signup' ? 'Join BeautifulMinds and build a joyful reading shelf.' : mode === 'forgot' ? 'We’ll email you a secure reset link.' : mode === 'reset' ? 'Make it memorable and at least 8 characters.' : 'Continue your family’s reading journey.'
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-[#07152f]/65 p-0 backdrop-blur-md sm:items-center sm:p-4">
-      <div className="relative max-h-[100dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] border border-white/60 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_30px_90px_-25px_rgba(7,21,47,.5)] sm:max-h-[92dvh] sm:rounded-[2rem] sm:p-8">
-        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#33c8c0] via-[#70ddd6] to-[#ffb45e]" />
-        <div className="mb-6 flex items-start justify-between gap-3">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="max-h-[100dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[92dvh] sm:rounded-[2rem] sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6">
           <div>
-            <div className="mb-2 inline-flex rounded-full bg-[#eafaf8] px-3 py-1 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#147f79]">BeautifulMinds</div>
-            <div className="text-2xl font-extrabold tracking-tight text-[#0b1933] sm:text-3xl">{title}</div>
-            <div className="mt-1.5 text-sm leading-6 text-slate-500">{subtitle}</div>
+            <div className="text-2xl font-bold text-slate-900">
+              {mode === 'signup' ? 'Create your account' : 'Log in'}
+            </div>
+            <div className="mt-1 text-sm text-slate-500">
+              {mode === 'signup'
+                ? 'Create a free BeautifulMinds account with email and password.'
+                : 'Log into your BeautifulMinds account.'}
+            </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg text-slate-500 transition hover:bg-slate-50">×</button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 shrink-0 rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          >
+            Close
+          </button>
         </div>
 
-        {(mode === 'signup' || mode === 'login') && <div className="mb-6 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
-          <button type="button" onClick={() => setMode('signup')} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${mode === 'signup' ? 'bg-white text-[#0b1933] shadow-sm' : 'text-slate-500'}`}>Sign up</button>
-          <button type="button" onClick={() => setMode('login')} className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${mode === 'login' ? 'bg-white text-[#0b1933] shadow-sm' : 'text-slate-500'}`}>Log in</button>
-        </div>}
+        <div className="mb-6 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setMode('signup')}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              mode === 'signup'
+                ? 'bg-slate-900 text-white'
+                : 'border border-slate-300 text-slate-700'
+            }`}
+          >
+            Sign up
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              mode === 'login'
+                ? 'bg-slate-900 text-white'
+                : 'border border-slate-300 text-slate-700'
+            }`}
+          >
+            Log in
+          </button>
+        </div>
 
         {mode === 'signup' ? (
           <form onSubmit={onSignUp} className="grid gap-4 md:grid-cols-2">
-            <FormInput label="Full name" value={form.full_name} onChange={(value) => setForm((prev) => ({ ...prev, full_name: value }))} />
-            <FormInput label="Email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
-            <FormInput label="Password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} type="password" />
-            <FormInput label="Country" value={form.country} onChange={(value) => setForm((prev) => ({ ...prev, country: value }))} />
-            <FormInput label="Preferred language" value={form.preferred_language} onChange={(value) => setForm((prev) => ({ ...prev, preferred_language: value }))} />
-            <FormInput label="Child age band" value={form.child_age_band} onChange={(value) => setForm((prev) => ({ ...prev, child_age_band: value }))} />
-            <div className="md:col-span-2"><label className="mb-2 block text-sm font-bold text-slate-700">Role</label><select value={form.role} onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))} className="bm-input"><option value="parent">Parent</option><option value="teacher">Teacher</option><option value="school">School</option><option value="partner">Partner</option></select></div>
-            <button type="submit" disabled={loading} className="bm-primary md:col-span-2">{loading ? 'Creating account…' : 'Create free account'}</button>
-          </form>
-        ) : mode === 'forgot' ? (
-          <form onSubmit={onForgotPassword} className="grid gap-4">
-            <FormInput label="Email address" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
-            <button type="submit" disabled={loading} className="bm-primary">{loading ? 'Sending…' : 'Send reset link'}</button>
-            <button type="button" onClick={() => setMode('login')} className="text-sm font-bold text-[#147f79] hover:underline">← Back to log in</button>
-          </form>
-        ) : mode === 'reset' ? (
-          <form onSubmit={onUpdatePassword} className="grid gap-4">
-            <FormInput label="New password" value={resetPassword} onChange={setResetPassword} type="password" />
-            <button type="submit" disabled={loading} className="bm-primary">{loading ? 'Updating…' : 'Update password'}</button>
+            <FormInput
+              label="Full name"
+              value={form.full_name}
+              onChange={(value) => setForm((prev) => ({ ...prev, full_name: value }))}
+            />
+            <FormInput
+              label="Email"
+              value={form.email}
+              onChange={(value) => setForm((prev) => ({ ...prev, email: value }))}
+              type="email"
+            />
+            <FormInput
+              label="Password"
+              value={form.password}
+              onChange={(value) => setForm((prev) => ({ ...prev, password: value }))}
+              type="password"
+            />
+            <FormInput
+              label="Country"
+              value={form.country}
+              onChange={(value) => setForm((prev) => ({ ...prev, country: value }))}
+            />
+            <FormInput
+              label="Preferred language"
+              value={form.preferred_language}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, preferred_language: value }))
+              }
+            />
+            <FormInput
+              label="Child age band"
+              value={form.child_age_band}
+              onChange={(value) => setForm((prev) => ({ ...prev, child_age_band: value }))}
+            />
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Role</label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#33c8c0]"
+              >
+                <option value="parent">Parent</option>
+                <option value="teacher">Teacher</option>
+                <option value="school">School</option>
+                <option value="partner">Partner</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-[#33c8c0] px-4 py-3 font-semibold text-white transition hover:bg-[#2bb0a9] disabled:opacity-60"
+              >
+                {loading ? 'Creating account...' : 'Create account'}
+              </button>
+            </div>
           </form>
         ) : (
           <form onSubmit={onLogin} className="grid gap-4">
-            <FormInput label="Email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} type="email" />
-            <div><FormInput label="Password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} type="password" /><div className="mt-2 text-right"><button type="button" onClick={() => setMode('forgot')} className="text-sm font-bold text-[#147f79] hover:underline">Forgot password?</button></div></div>
-            <button type="submit" disabled={loading} className="bm-primary">{loading ? 'Logging in…' : 'Log in'}</button>
+            <FormInput
+              label="Email"
+              value={form.email}
+              onChange={(value) => setForm((prev) => ({ ...prev, email: value }))}
+              type="email"
+            />
+            <FormInput
+              label="Password"
+              value={form.password}
+              onChange={(value) => setForm((prev) => ({ ...prev, password: value }))}
+              type="password"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-2xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {loading ? 'Logging in...' : 'Log in'}
+            </button>
           </form>
         )}
       </div>
@@ -1609,7 +1645,7 @@ function ResourceCard({
   onOpen: () => void
 }) {
   return (
-    <div className="group rounded-[1.75rem] border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_-22px_rgba(15,23,42,.35)] transition duration-300 hover:-translate-y-1 hover:border-[#33c8c0]/40 hover:shadow-[0_20px_45px_-22px_rgba(20,120,115,.35)]">
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div className="rounded-full bg-[#eefcfb] px-3 py-1 text-xs font-semibold text-[#1a8d87]">
           {resource.source}
@@ -1709,7 +1745,7 @@ function FormInput({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="bm-input"
+        className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#33c8c0] disabled:bg-slate-100"
       />
     </div>
   )
