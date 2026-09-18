@@ -122,3 +122,24 @@
   input, select, textarea { font-size: 16px !important; }
   button, a { -webkit-tap-highlight-color: transparent; }
 }
+
+@layer components {
+  .bm-input {
+    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 outline-none transition disabled:bg-slate-100;
+    box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.03);
+  }
+  .bm-input:focus {
+    border-color: #33c8c0;
+    box-shadow: 0 0 0 4px rgb(51 200 192 / 0.13);
+  }
+  .bm-primary {
+    @apply min-h-12 w-full rounded-2xl px-5 py-3.5 font-extrabold text-white transition disabled:cursor-not-allowed disabled:opacity-60;
+    background: linear-gradient(135deg, #24bdb5, #33c8c0);
+    box-shadow: 0 12px 26px -12px rgb(24 157 150 / 0.7);
+  }
+  .bm-primary:hover:not(:disabled) { transform: translateY(-1px); filter: saturate(1.08) brightness(.98); }
+}
+
+body { background-image: radial-gradient(circle at 12% 8%, rgb(51 200 192 / .055), transparent 28rem), radial-gradient(circle at 90% 18%, rgb(255 180 94 / .07), transparent 24rem); }
+button, a, input, select { transition-duration: 180ms; }
+::selection { background: rgb(51 200 192 / .22); }
