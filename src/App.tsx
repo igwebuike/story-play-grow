@@ -371,6 +371,7 @@ function App() {
   const [adminNewsletter, setAdminNewsletter] = useState<AdminRow[]>([])
   const [adminPartners, setAdminPartners] = useState<AdminRow[]>([])
   const [loadingAdmin, setLoadingAdmin] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const boot = async () => {
@@ -741,16 +742,16 @@ function App() {
   return (
     <div className="min-h-screen bg-[#f8f5ef] text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-4">
           <button
             type="button"
-            className="text-left"
-            onClick={() => setActiveView('home')}
+            className="min-w-0 text-left"
+            onClick={() => { setActiveView('home'); setMobileMenuOpen(false) }}
           >
-            <div className="text-xl font-bold tracking-tight text-slate-900">
+            <div className="truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
               BeautifulMinds
             </div>
-            <div className="text-xs text-slate-500">Read with joy, grow with confidence</div>
+            <div className="hidden text-xs text-slate-500 sm:block">Read with joy, grow with confidence</div>
           </button>
 
           <nav className="hidden gap-2 md:flex">
@@ -779,7 +780,8 @@ function App() {
             ) : null}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <button type="button" aria-label="Open navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((v) => !v)} className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-xl text-slate-700 md:hidden">☰</button>
             {user ? (
               <>
                 <div className="hidden text-right md:block">
@@ -789,7 +791,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setActiveView('profile')}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="hidden min-h-11 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:inline-flex sm:items-center"
                 >
                   Dashboard
                 </button>
@@ -813,7 +815,7 @@ function App() {
                 <button
                   type="button"
                   onClick={openSignup}
-                  className="rounded-full bg-[#33c8c0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#2bb0a9]"
+                  className="min-h-11 rounded-full bg-[#33c8c0] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#2bb0a9] sm:px-4"
                 >
                   Create account
                 </button>
@@ -821,6 +823,17 @@ function App() {
             )}
           </div>
         </div>
+        {mobileMenuOpen ? (
+          <nav className="border-t border-slate-200 bg-white px-3 py-3 md:hidden">
+            <div className="mx-auto grid max-w-7xl gap-2">
+              {[['home','Home'],['library','Free Library'],['profile','Profile']].map(([view,label]) => (
+                <button key={view} type="button" onClick={() => { setActiveView(view as ViewMode); setMobileMenuOpen(false) }} className={`min-h-11 rounded-xl px-4 text-left text-sm font-semibold ${activeView === view ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-700'}`}>{label}</button>
+              ))}
+              {profile?.is_admin ? <button type="button" onClick={() => { setActiveView('admin'); setMobileMenuOpen(false) }} className="min-h-11 rounded-xl bg-slate-50 px-4 text-left text-sm font-semibold text-slate-700">Admin</button> : null}
+              {!user ? <button type="button" onClick={() => { openLogin(); setMobileMenuOpen(false) }} className="min-h-11 rounded-xl border border-slate-300 px-4 text-left text-sm font-semibold text-slate-700">Log in</button> : null}
+            </div>
+          </nav>
+        ) : null}
       </header>
 
       {message ? (
@@ -942,30 +955,30 @@ function HomeView({
 }) {
   return (
     <>
-      <section className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:grid-cols-2 md:items-center">
+      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:py-12 md:grid-cols-2 md:items-center md:py-16">
         <div>
           <div className="mb-4 inline-block rounded-full bg-[#eefcfb] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#1a8d87]">
             Early Access • Built for readers
           </div>
-          <h1 className="max-w-xl text-4xl font-bold leading-tight text-slate-900 md:text-6xl">
+          <h1 className="max-w-xl text-3xl font-bold leading-tight text-slate-900 sm:text-4xl md:text-6xl">
             Help Your Child Learn To Read With <span className="text-[#33c8c0]">Joy</span> — Not Pressure
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:mt-5 sm:text-lg sm:leading-8">
             BeautifulMinds is becoming a real reading hub for families, schools, and literacy
             partners — with accounts, saved books, free library access, and curated story discovery.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={onOpenSignup}
-              className="rounded-full bg-[#33c8c0] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2bb0a9]"
+              className="min-h-12 w-full rounded-full bg-[#33c8c0] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#2bb0a9] sm:w-auto"
             >
               Create Free Account
             </button>
             <button
               type="button"
               onClick={onOpenLibrary}
-              className="rounded-full border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+              className="min-h-12 w-full rounded-full border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50 sm:w-auto"
             >
               Browse Free Library
             </button>
@@ -1031,7 +1044,7 @@ function HomeView({
 
       <section className="bg-white py-16">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="grid gap-10 rounded-[2rem] border border-slate-200 bg-[#fbfaf7] p-8 md:grid-cols-2">
+          <div className="grid gap-8 rounded-3xl border border-slate-200 bg-[#fbfaf7] p-5 sm:p-8 md:grid-cols-2">
             <div>
               <div className="text-sm font-semibold uppercase tracking-wide text-[#1a8d87]">
                 Join Early Access
@@ -1150,7 +1163,7 @@ function LibraryView({
 
       <div className="mt-14 grid gap-10 xl:grid-cols-2">
         <div>
-          <h3 className="text-2xl font-bold text-slate-900">Curated free book links</h3>
+          <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">Curated free book links</h3>
           <div className="mt-5 grid gap-4">
             {curatedBookSources.map((item) => (
               <ResourceCard
@@ -1384,9 +1397,9 @@ function AuthModal({
   onLogin: (event: React.FormEvent) => Promise<void>
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl">
-        <div className="mb-6 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="max-h-[100dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[92dvh] sm:rounded-[2rem] sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6">
           <div>
             <div className="text-2xl font-bold text-slate-900">
               {mode === 'signup' ? 'Create your account' : 'Log in'}
@@ -1400,7 +1413,7 @@ function AuthModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+            className="min-h-11 shrink-0 rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
           >
             Close
           </button>
