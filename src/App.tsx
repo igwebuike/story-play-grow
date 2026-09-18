@@ -387,12 +387,16 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      // Keep this callback synchronous. Awaiting another Supabase request inside
+      // onAuthStateChange can block auth completion in the browser.
       setSession(currentSession)
       setUser(currentSession?.user ?? null)
 
       if (currentSession?.user) {
-        await loadProfile(currentSession.user.id)
+        window.setTimeout(() => {
+          void loadProfile(currentSession.user.id)
+        }, 0)
       } else {
         setProfile(null)
       }
@@ -499,7 +503,7 @@ function App() {
     setMessage('')
 
     const email = authForm.email.trim()
-    const password = authForm.password.trim()
+    const password = authForm.password
 
     if (!email || !password || !authForm.full_name.trim()) {
       setLoadingAuth(false)
@@ -530,9 +534,11 @@ function App() {
     }
 
     setMessage(
-      'Account created. Please check your email to confirm your account, then log in.',
+      'Account created successfully. Check your email for a confirmation link. After confirming, return here and log in.',
     )
-    setShowAuth(false)
+    // Keep the modal open so the user can actually see the success message.
+    // Previously it closed immediately, making signup appear to do nothing.
+    setAuthMode('login')
     setAuthForm((prev) => ({ ...prev, password: '' }))
   }
 
@@ -543,7 +549,7 @@ function App() {
 
     const { error } = await supabase.auth.signInWithPassword({
       email: authForm.email.trim(),
-      password: authForm.password.trim(),
+      password: authForm.password,
     })
 
     setLoadingAuth(false)
@@ -881,6 +887,7 @@ function App() {
           form={authForm}
           setForm={setAuthForm}
           loading={loadingAuth}
+          message={message}
           onClose={() => setShowAuth(false)}
           onSignUp={handleSignUp}
           onLogin={handleLogin}
@@ -1361,6 +1368,7 @@ function AuthModal({
   form,
   setForm,
   loading,
+  message,
   onClose,
   onSignUp,
   onLogin,
@@ -1370,6 +1378,7 @@ function AuthModal({
   form: AuthFormState
   setForm: React.Dispatch<React.SetStateAction<AuthFormState>>
   loading: boolean
+  message: string
   onClose: () => void
   onSignUp: (event: React.FormEvent) => Promise<void>
   onLogin: (event: React.FormEvent) => Promise<void>
@@ -1396,6 +1405,16 @@ function AuthModal({
             Close
           </button>
         </div>
+
+        {message ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
+          >
+            {message}
+          </div>
+        ) : null}
 
         <div className="mb-6 flex gap-2">
           <button
