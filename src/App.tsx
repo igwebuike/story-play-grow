@@ -28,6 +28,8 @@ type Resource = {
   language?: string
   format?: string
   category?: string
+  readerUrl?: string
+  canEmbed?: boolean
 }
 
 type AuthFormState = {
@@ -222,6 +224,8 @@ async function searchOpenLibrary(query: string): Promise<Resource[]> {
     language: Array.isArray(item.language) ? item.language.slice(0, 3).join(', ') : '',
     format: 'Catalog',
     category: 'Books',
+    readerUrl: Array.isArray(item.ia) && item.ia[0] ? `https://archive.org/embed/${item.ia[0]}` : undefined,
+    canEmbed: Array.isArray(item.ia) && Boolean(item.ia[0]),
   }))
 }
 
@@ -253,6 +257,8 @@ async function searchGoogleBooks(query: string): Promise<Resource[]> {
       language: volume.language || '',
       format: 'Catalog',
       category: 'Books',
+      readerUrl: item.id ? `https://books.google.com/books?id=${encodeURIComponent(item.id)}&printsec=frontcover&output=embed` : undefined,
+      canEmbed: Boolean(item.id && (item.accessInfo?.embeddable ?? true)),
     }
   })
 }
@@ -287,6 +293,8 @@ async function searchInternetArchive(query: string): Promise<Resource[]> {
     previewUrl: item.identifier
       ? `https://archive.org/details/${item.identifier}`
       : 'https://archive.org/',
+    readerUrl: item.identifier ? `https://archive.org/embed/${item.identifier}` : undefined,
+    canEmbed: Boolean(item.identifier),
     language: '',
     format: 'Archive',
     category: 'Books',
@@ -372,6 +380,7 @@ function App() {
   const [adminPartners, setAdminPartners] = useState<AdminRow[]>([])
   const [loadingAdmin, setLoadingAdmin] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null)
 
   useEffect(() => {
     const boot = async () => {
@@ -388,16 +397,12 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      // Keep this callback synchronous. Awaiting another Supabase request inside
-      // onAuthStateChange can block auth completion in the browser.
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
       setSession(currentSession)
       setUser(currentSession?.user ?? null)
 
       if (currentSession?.user) {
-        window.setTimeout(() => {
-          void loadProfile(currentSession.user.id)
-        }, 0)
+        await loadProfile(currentSession.user.id)
       } else {
         setProfile(null)
       }
@@ -504,7 +509,7 @@ function App() {
     setMessage('')
 
     const email = authForm.email.trim()
-    const password = authForm.password
+    const password = authForm.password.trim()
 
     if (!email || !password || !authForm.full_name.trim()) {
       setLoadingAuth(false)
@@ -535,11 +540,9 @@ function App() {
     }
 
     setMessage(
-      'Account created successfully. Check your email for a confirmation link. After confirming, return here and log in.',
+      'Account created. Please check your email to confirm your account, then log in.',
     )
-    // Keep the modal open so the user can actually see the success message.
-    // Previously it closed immediately, making signup appear to do nothing.
-    setAuthMode('login')
+    setShowAuth(false)
     setAuthForm((prev) => ({ ...prev, password: '' }))
   }
 
@@ -550,7 +553,7 @@ function App() {
 
     const { error } = await supabase.auth.signInWithPassword({
       email: authForm.email.trim(),
-      password: authForm.password,
+      password: authForm.password.trim(),
     })
 
     setLoadingAuth(false)
@@ -692,20 +695,20 @@ function App() {
   }
 
   async function handleOpenResource(resource: Resource) {
-    try {
-      if (user) {
+    setSelectedResource(resource)
+
+    if (user) {
+      try {
         const resourceId = await ensureResourceRecord(resource)
         await supabase.from('reading_history').insert({
           user_id: user.id,
           resource_id: resourceId,
-          event_type: 'clicked_out',
+          event_type: 'opened',
         })
+      } catch (error) {
+        console.error(error)
       }
-    } catch (error) {
-      console.error(error)
     }
-
-    window.open(resource.previewUrl || resource.sourceUrl, '_blank', 'noopener,noreferrer')
   }
 
   async function handleProfileSave(event: React.FormEvent) {
@@ -900,7 +903,6 @@ function App() {
           form={authForm}
           setForm={setAuthForm}
           loading={loadingAuth}
-          message={message}
           onClose={() => setShowAuth(false)}
           onSignUp={handleSignUp}
           onLogin={handleLogin}
@@ -1010,7 +1012,7 @@ function HomeView({
               <ResourceCard
                 key={item.externalId}
                 resource={item}
-                onOpen={() => window.open(item.sourceUrl, '_blank', 'noopener,noreferrer')}
+                onOpen={() => void onOpen(item)}
               />
             ))}
           </div>
@@ -1169,7 +1171,7 @@ function LibraryView({
               <ResourceCard
                 key={item.externalId}
                 resource={item}
-                onOpen={() => window.open(item.sourceUrl, '_blank', 'noopener,noreferrer')}
+                onOpen={() => void onOpen(item)}
               />
             ))}
           </div>
@@ -1381,7 +1383,6 @@ function AuthModal({
   form,
   setForm,
   loading,
-  message,
   onClose,
   onSignUp,
   onLogin,
@@ -1391,7 +1392,6 @@ function AuthModal({
   form: AuthFormState
   setForm: React.Dispatch<React.SetStateAction<AuthFormState>>
   loading: boolean
-  message: string
   onClose: () => void
   onSignUp: (event: React.FormEvent) => Promise<void>
   onLogin: (event: React.FormEvent) => Promise<void>
@@ -1418,16 +1418,6 @@ function AuthModal({
             Close
           </button>
         </div>
-
-        {message ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
-          >
-            {message}
-          </div>
-        ) : null}
 
         <div className="mb-6 flex gap-2">
           <button
@@ -1567,6 +1557,70 @@ function SectionHeading({
       </div>
       <h2 className="mt-3 text-3xl font-bold text-slate-900 md:text-4xl">{title}</h2>
       <p className="mt-3 text-lg leading-8 text-slate-600">{subtitle}</p>
+    </div>
+  )
+}
+
+function ReaderModal({
+  resource,
+  onClose,
+  onSave,
+  saving,
+}: {
+  resource: Resource
+  onClose: () => void
+  onSave: (resource: Resource) => Promise<void>
+  saving: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end bg-slate-950/60 sm:items-center sm:justify-center sm:p-4">
+      <div className="flex max-h-[96dvh] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:max-w-6xl sm:rounded-[2rem]">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[#1a8d87]">BeautifulMinds Reader · {resource.source}</div>
+            <h2 className="mt-1 truncate text-lg font-bold text-slate-900 sm:text-2xl">{resource.title}</h2>
+            <p className="truncate text-sm text-slate-500">{resource.author}</p>
+          </div>
+          <button type="button" onClick={onClose} className="min-h-11 shrink-0 rounded-full border border-slate-300 px-4 text-sm font-semibold">Close</button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#fbfaf7]">
+          {resource.canEmbed && resource.readerUrl ? (
+            <iframe
+              title={`Read ${resource.title}`}
+              src={resource.readerUrl}
+              className="h-[68dvh] min-h-[520px] w-full bg-white"
+              allow="fullscreen"
+              loading="eager"
+            />
+          ) : (
+            <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
+              <div className="grid gap-6 sm:grid-cols-[180px_1fr]">
+                {resource.coverUrl ? <img src={resource.coverUrl} alt="" className="w-full rounded-2xl object-cover shadow-sm" /> : <div className="flex min-h-52 items-center justify-center rounded-2xl bg-white text-sm text-slate-500">Book preview</div>}
+                <div>
+                  <span className="rounded-full bg-[#eefcfb] px-3 py-1 text-xs font-semibold text-[#1a8d87]">{resource.format || resource.source}</span>
+                  <h3 className="mt-4 text-2xl font-bold text-slate-900">{resource.title}</h3>
+                  <p className="mt-2 text-slate-500">{resource.author}</p>
+                  <p className="mt-5 leading-7 text-slate-600">{resource.description}</p>
+                  <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                    This provider does not offer an embeddable reader for this item. BeautifulMinds keeps the book details here and only opens the provider when you choose to continue reading.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="text-xs text-slate-500">Reading source: {resource.source}. Content remains subject to the source provider's rights and terms.</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => void onSave(resource)} disabled={saving} className="min-h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm font-semibold sm:flex-none">{saving ? 'Saving…' : 'Save'}</button>
+            {!resource.canEmbed && (
+              <a href={resource.previewUrl || resource.sourceUrl} target="_blank" rel="noreferrer" className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white sm:flex-none">Continue at {resource.source} ↗</a>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

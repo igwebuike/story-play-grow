@@ -1,0 +1,25 @@
+BeautifulMinds consolidated production build
+
+Includes:
+- Existing signup/login production fixes
+- Mobile-first responsive layout/navigation/forms
+- Mobile-safe auth modal and touch targets
+- BeautifulMinds in-app Reader
+- Embedded reading where provider supports it (Internet Archive / compatible Google Books)
+- Internal book detail experience with provider handoff only when embedding is unavailable
+- Favorites/save integration
+- Reading-history event logging
+- BeautifulMinds metadata/branding cleanup
+
+DEPLOY:
+1. Extract this ZIP.
+2. Copy all extracted files into C:\Users\eugen\Desktop\story-play-grow and replace existing files.
+   Do NOT delete the repository's hidden .git folder.
+3. In Command Prompt:
+   cd C:\Users\eugen\Desktop\story-play-grow
+   git status
+   git add .
+   git commit -m "Add BeautifulMinds in-app reader experience"
+   git pull --rebase origin main
+   git push origin main
+4. Wait for Vercel deployment to show Ready / Production.
