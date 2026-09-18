@@ -584,7 +584,7 @@ function App() {
     setLoadingAuth(true)
     setMessage('')
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: 'https://beautifulminds.com.ng',
     })
     setLoadingAuth(false)
     if (error) {
@@ -940,6 +940,15 @@ function App() {
           profiles={adminProfiles}
           newsletter={adminNewsletter}
           partners={adminPartners}
+        />
+      ) : null}
+
+      {selectedResource ? (
+        <ReaderModal
+          resource={selectedResource}
+          onClose={() => setSelectedResource(null)}
+          onSave={handleSaveResource}
+          saving={savingResourceId === selectedResource.externalId}
         />
       ) : null}
 
